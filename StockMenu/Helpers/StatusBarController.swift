@@ -9,53 +9,42 @@
 import AppKit
 
 class StatusBarController {
-    private var statusBar: NSStatusBar
     private var statusItem: NSStatusItem
-    private var popover: NSPopover
-    private var eventMonitor: EventMonitor?
+    private var menu: NSMenu
+    private var statusButton: NSStatusBarButton?
+    private let bash: CommandExecuting
+    private let script: String
     
-    init(_ popover: NSPopover)
+    func exec() {
+        if let lsOutput = try? bash.run(commandName: "/bin/bash", arguments: [script]) {
+            statusButton!.title = (lsOutput)
+        }
+    }
+    
+    init()
     {
-        self.popover = popover
-        statusBar = NSStatusBar.init()
-        statusItem = statusBar.statusItem(withLength: 28.0)
+        bash = Bash()
+        script = Bundle.main.object(forInfoDictionaryKey: "Script path") as! String
         
-        if let statusBarButton = statusItem.button {
-            statusBarButton.image = #imageLiteral(resourceName: "StatusBarIcon")
-            statusBarButton.image?.size = NSSize(width: 18.0, height: 18.0)
-            statusBarButton.image?.isTemplate = true
-            
-            statusBarButton.action = #selector(togglePopover(sender:))
-            statusBarButton.target = self
-        }
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem.autosaveName = "wzm.stockmenu"
+        statusButton = statusItem.button
         
-        eventMonitor = EventMonitor(mask: [.leftMouseDown, .rightMouseDown], handler: mouseEventHandler)
-    }
-    
-    @objc func togglePopover(sender: AnyObject) {
-        if(popover.isShown) {
-            hidePopover(sender)
-        }
-        else {
-            showPopover(sender)
-        }
-    }
-    
-    func showPopover(_ sender: AnyObject) {
-        if let statusBarButton = statusItem.button {
-            popover.show(relativeTo: statusBarButton.bounds, of: statusBarButton, preferredEdge: NSRectEdge.maxY)
-            eventMonitor?.start()
+        menu = NSMenu.init()
+        let item = menu.addItem(withTitle: "Quit", action: #selector(self.quit(_:)), keyEquivalent: "quit")
+        item.target = self
+        statusItem.menu = menu
+        
+        statusButton?.target = self
+
+        exec()
+        
+        Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { (_) in
+            self.exec()
         }
     }
     
-    func hidePopover(_ sender: AnyObject) {
-        popover.performClose(sender)
-        eventMonitor?.stop()
-    }
-    
-    func mouseEventHandler(_ event: NSEvent?) {
-        if(popover.isShown) {
-            hidePopover(event!)
-        }
+    @objc func quit(_: AnyObject) {
+        NSApplication.shared.terminate(self)
     }
 }

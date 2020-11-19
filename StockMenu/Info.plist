@@ -34,5 +34,7 @@
 	<true/>
 	<key>NSSupportsSuddenTermination</key>
 	<true/>
+	<key>Script path</key>
+	<string>/Users/wangzhaoming/Documents/bitbar/stock.5s.sh</string>
 </dict>
 </plist>
