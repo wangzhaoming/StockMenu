@@ -16,8 +16,28 @@ class StatusBarController {
     private let script: String
     
     func exec() {
-        if let lsOutput = try? bash.run(commandName: "/bin/bash", arguments: [script]) {
-            statusButton!.title = (lsOutput)
+        if let out = try? bash.run(commandName: "/bin/bash", arguments: [script]) {
+            if out.err.count > 0 {
+                statusButton?.image = NSImage(named: NSImage.Name("StatusBarIcon"))
+            }
+            else {
+                let output = out.out.split(separator: "\n")
+                statusButton?.image = nil
+                statusButton?.title = (String(output[0]))
+                
+                if menu.items.count > 1 {
+                    for item in menu.items[0...menu.items.count - 2] {
+                        menu.removeItem(item)
+                    }
+                }
+
+                for (i, o) in output[1...].enumerated(){
+                    menu.insertItem(withTitle: String(o), action: nil, keyEquivalent: "", at: i)
+                }
+            }
+        }
+        else {
+            statusButton?.image = NSImage(named: NSImage.Name("StatusBarIcon"))
         }
     }
     
@@ -27,7 +47,7 @@ class StatusBarController {
         script = Bundle.main.object(forInfoDictionaryKey: "Script path") as! String
         
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.autosaveName = "wzm.stockmenu"
+        statusItem.autosaveName = "wzm.stockmenu" + script
         statusButton = statusItem.button
         
         menu = NSMenu.init()
